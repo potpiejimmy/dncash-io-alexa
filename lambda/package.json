@@ -1,0 +1,9 @@
+{
+  "name": "dncash-io-alexa",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "alexa-sdk": "^1.0.25",
+    "node-fetch": "^2.0.0"
+  }
+}
