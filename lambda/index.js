@@ -13,8 +13,6 @@
 const Alexa = require('alexa-sdk');
 const fetch = require('node-fetch');
 
-const APP_ID = 'amzn1.ask.skill.5d0cc6ea-d5cd-40c5-ac98-7d8fce354b60';
-
 const languageStrings = {
     'en': {
         translation: {
@@ -24,7 +22,11 @@ const languageStrings = {
             HELP_MESSAGE: "You can say, I need a hundred euros, or, you can say exit...Now, what can I help you with?",
             HELP_REPROMPT: "You can say things like, I need a hundred euros, or you can say exit...Now, what can I help you with?",
             STOP_MESSAGE: 'Goodbye!',
-            GET_MONEY_REPONSE: 'Okay, just go the next ATM, present your smartphone and you will get %s euros.'
+            GET_MONEY_RESPONSE: 'Okay, just go the next ATM, present your smartphone and you will get %s euros.',
+            AUTHENTICATE_MESSAGE: 'To start using this skill, please use the companion app to authenticate to %s',
+            MULTIPLE_OF_TEN_ALLOWED: 'Only numbers multiple of 10 are allowed. Please choose a different amount.',
+            AMOUNT_REPROMT: 'Which amount you want to withdraw?',
+            AMOUNT_GREATER_TEN: 'You cannot withdraw less than 10 Euro. Please choose a different amount.'
         },
     },
     'de': {
@@ -35,7 +37,11 @@ const languageStrings = {
             HELP_MESSAGE: 'Du kannst beispielsweise sagen: „Ich brauche 100 Euro“ oder du kannst „Beenden“ sagen ... Wie kann ich dir helfen?',
             HELP_REPROMPT: 'Du kannst beispielsweise sagen: „Ich brauche 100 Euro“ oder du kannst „Beenden“ sagen ... Wie kann ich dir helfen?',
             STOP_MESSAGE: 'Auf Wiedersehen!',
-            GET_MONEY_REPONSE: 'Okay, halte einfach dein Handy an den nächsten Geldautomaten und du bekommst %s Euro.'
+            GET_MONEY_RESPONSE: 'Okay, halte einfach dein Handy an den nächsten Geldautomaten und du bekommst %s Euro.',
+            AUTHENTICATE_MESSAGE: 'Um diesen Skill nutzen zu können, musst du dich in der Alexa App mit %s verknüpfen.',
+            MULTIPLE_OF_TEN_ALLOWED: 'Es sind nur vielfache von 10 erlaubt. Bitte wählte einen anderen Betrag',
+            AMOUNT_REPROMT: 'Welchen Betrag möchtest du auszahlen?',
+            AMOUNT_GREATER_TEN: 'Du kannst nicht weniger als 10 Euro auszahlen. Bitte wähle einen anderen Betrag.'
         },
     },
 };
@@ -44,6 +50,12 @@ const handlers = {
     //Use LaunchRequest, instead of NewSession if you want to use the one-shot model
     // Alexa, ask [my-skill-invocation-name] to (do something)...
     'LaunchRequest': function () {
+        //if no amazon token, return a LinkAccount card
+        //if (this.event.session.user.accessToken == undefined) {
+        //    this.emit(':tellWithLinkAccountCard', this.t('AUTHENTICATE_MESSAGE', this.t('SKILL_NAME')));
+        //    return;
+        //}
+
         this.attributes.speechOutput = this.t('WELCOME_MESSAGE', this.t('SKILL_NAME'));
         // If the user either does not reply to the welcome message or says something that is not
         // understood, they will be prompted again with this text.
@@ -53,17 +65,35 @@ const handlers = {
         this.emit(':responseReady');
     },
     'GetMoneyIntent': function () {
-        const amount = this.event.request.intent.slots.amount.value;
+        //if (this.event.session.user.accessToken == undefined) {
+        //    this.emit(':tellWithLinkAccountCard', this.t('AUTHENTICATE_MESSAGE', this.t('SKILL_NAME')));
+        //    return;
+        //}
+
+        var amount = this.event.request.intent.slots.amount.value;
+
+        if(amount < 10) {
+            this.response.speak(this.t('AMOUNT_GREATER_TEN')).listen(this.t('AMOUNT_REPROMT'));
+            this.emit(':responseReady');
+            return;
+        } else if(amount%10 != 0) {
+            this.response.speak(this.t('MULTIPLE_OF_TEN_ALLOWED')).listen(this.t('AMOUNT_REPROMT'));
+            this.emit(':responseReady');
+            return;
+        }
+
+        //checks done -> round every 2.0 to 2!
+        amount = Math.round(amount);
         
         invokeBackend.call(this, "https://dncashapi.dn-sol.net/dnapi/token/v1/tokens", {method:'POST', body: JSON.stringify({
-            device_uuid: process.env.DEVICE_UUID,
+            device_uuid: process.env.DEVICE_UUID, //this.event.session.user.accessToken.DEVICE_UUID
             amount: parseInt(amount) * 100,
             symbol: "EUR",
             type: "CASHOUT",
             refname: "alexa-"+this.event.request.requestId
         })}).then(rres => {
             console.log("dncash.io RESULT: " + JSON.stringify(rres));
-            this.attributes.speechOutput = this.t('GET_MONEY_REPONSE', amount);
+            this.attributes.speechOutput = this.t('GET_MONEY_RESPONSE', amount);
     
             this.response.speak(this.attributes.speechOutput);
             this.response.cardRenderer('dncash.io', this.attributes.speechOutput);
@@ -103,18 +133,18 @@ const handlers = {
 
 exports.handler = function (event, context, callback) {
     const alexa = Alexa.handler(event, context, callback);
-    alexa.APP_ID = APP_ID;
+    alexa.APP_ID = process.env.APP_ID;
     // To enable string internationalization (i18n) features, set a resources object.
     alexa.resources = languageStrings;
     alexa.registerHandlers(handlers);
     alexa.execute();
 };
 
-function invokeBackend(url, options) {
+function invokeBackend(alexa, url, options) {
     options.headers = {
         "Content-Type": "application/json",
-        "DN-API-KEY": process.env.DN_API_KEY,
-        "DN-API-SECRET": process.env.DN_API_SECRET
+        "DN-API-KEY": process.env.DN_API_KEY, //alexa.event.session.user.accessToken.DN_API_KEY
+        "DN-API-SECRET": process.env.DN_API_SECRET //alexa.event.session.user.accessToken.DN_API_SECRET
     };
     return fetch(url, options)
         .then(res => res.json())

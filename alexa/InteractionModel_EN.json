@@ -6,20 +6,20 @@
                 {
                     "name": "AMAZON.CancelIntent",
                     "samples": [
-                        "abbrechen"
+                        "cancel"
                     ]
                 },
                 {
                     "name": "AMAZON.HelpIntent",
                     "samples": [
-                        "hilfe"
+                        "help"
                     ]
                 },
                 {
                     "name": "AMAZON.StopIntent",
                     "samples": [
                         "stop",
-                        "beenden"
+                        "close"
                     ]
                 },
                 {
@@ -31,7 +31,8 @@
                         }
                     ],
                     "samples": [
-                        "Ich brauche {amount} Euro"
+                        "I need {amount} Euro",
+                        "{amount} Euro"
                     ]
                 }
             ],
