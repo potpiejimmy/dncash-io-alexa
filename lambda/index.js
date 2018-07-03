@@ -51,10 +51,10 @@ const handlers = {
     // Alexa, ask [my-skill-invocation-name] to (do something)...
     'LaunchRequest': function () {
         //if no amazon token, return a LinkAccount card
-        //if (this.event.session.user.accessToken == undefined) {
-        //    this.emit(':tellWithLinkAccountCard', this.t('AUTHENTICATE_MESSAGE', this.t('SKILL_NAME')));
-        //    return;
-        //}
+        if (this.event.session.user.accessToken == undefined) {
+            this.emit(':tellWithLinkAccountCard', this.t('AUTHENTICATE_MESSAGE', this.t('SKILL_NAME')));
+            return;
+        }
 
         this.attributes.speechOutput = this.t('WELCOME_MESSAGE', this.t('SKILL_NAME'));
         // If the user either does not reply to the welcome message or says something that is not
@@ -65,10 +65,10 @@ const handlers = {
         this.emit(':responseReady');
     },
     'GetMoneyIntent': function () {
-        //if (this.event.session.user.accessToken == undefined) {
-        //    this.emit(':tellWithLinkAccountCard', this.t('AUTHENTICATE_MESSAGE', this.t('SKILL_NAME')));
-        //    return;
-        //}
+        if (this.event.session.user.accessToken == undefined) {
+            this.emit(':tellWithLinkAccountCard', this.t('AUTHENTICATE_MESSAGE', this.t('SKILL_NAME')));
+            return;
+        }
 
         var amount = this.event.request.intent.slots.amount.value;
 
@@ -86,7 +86,7 @@ const handlers = {
         amount = Math.round(amount);
         
         invokeBackend.call(this, "https://dncashapi.dn-sol.net/dnapi/token/v1/tokens", {method:'POST', body: JSON.stringify({
-            device_uuid: process.env.DEVICE_UUID, //this.event.session.user.accessToken.DEVICE_UUID
+            device_uuid: JSON.parse(alexa.event.session.user.accessToken).DEVICE_UUID,
             amount: parseInt(amount) * 100,
             symbol: "EUR",
             type: "CASHOUT",
@@ -141,10 +141,11 @@ exports.handler = function (event, context, callback) {
 };
 
 function invokeBackend(alexa, url, options) {
+
     options.headers = {
         "Content-Type": "application/json",
-        "DN-API-KEY": process.env.DN_API_KEY, //alexa.event.session.user.accessToken.DN_API_KEY
-        "DN-API-SECRET": process.env.DN_API_SECRET //alexa.event.session.user.accessToken.DN_API_SECRET
+        "DN-API-KEY": JSON.parse(alexa.event.session.user.accessToken).DN_API_KEY,
+        "DN-API-SECRET": JSON.parse(alexa.event.session.user.accessToken).DN_API_SECRET
     };
     return fetch(url, options)
         .then(res => res.json())
