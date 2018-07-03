@@ -26,7 +26,8 @@ const languageStrings = {
             AUTHENTICATE_MESSAGE: 'To start using this skill, please use the companion app to authenticate to %s',
             MULTIPLE_OF_TEN_ALLOWED: 'Only numbers multiple of 10 are allowed. Please choose a different amount.',
             AMOUNT_REPROMT: 'Which amount you want to withdraw?',
-            AMOUNT_GREATER_TEN: 'You cannot withdraw less than 10 Euro. Please choose a different amount.'
+            AMOUNT_GREATER_TEN: 'You cannot withdraw less than 10 Euro. Please choose a different amount.',
+            AMOUNT_NOT_RECOGNIZED: 'Sorry but I could not recognize the amount. Could you please repeat?'
         },
     },
     'de': {
@@ -41,7 +42,8 @@ const languageStrings = {
             AUTHENTICATE_MESSAGE: 'Um diesen Skill nutzen zu können, musst du dich in der Alexa App mit %s verknüpfen.',
             MULTIPLE_OF_TEN_ALLOWED: 'Es sind nur vielfache von 10 erlaubt. Bitte wählte einen anderen Betrag',
             AMOUNT_REPROMT: 'Welchen Betrag möchtest du auszahlen?',
-            AMOUNT_GREATER_TEN: 'Du kannst nicht weniger als 10 Euro auszahlen. Bitte wähle einen anderen Betrag.'
+            AMOUNT_GREATER_TEN: 'Du kannst nicht weniger als 10 Euro auszahlen. Bitte wähle einen anderen Betrag.',
+            AMOUNT_NOT_RECOGNIZED: 'Tut mir leid, ich habe den Betrag nicht verstanden. Kannst du ihn bitte wiederholen?'
         },
     },
 };
@@ -55,6 +57,10 @@ const handlers = {
             this.emit(':tellWithLinkAccountCard', this.t('AUTHENTICATE_MESSAGE', this.t('SKILL_NAME')));
             return;
         }
+
+        console.log("test");
+
+        console.log("access-Token: " + JSON.parse(this.event.session.user.accessToken));
 
         this.attributes.speechOutput = this.t('WELCOME_MESSAGE', this.t('SKILL_NAME'));
         // If the user either does not reply to the welcome message or says something that is not
@@ -70,23 +76,32 @@ const handlers = {
             return;
         }
 
-        var amount = this.event.request.intent.slots.amount.value;
+        console.log("access-Token: " + JSON.parse(this.event.session.user.accessToken));
+        console.log("amount: " + amount);
 
-        if(amount < 10) {
+        var accessToken = JSON.parse(this.event.session.user.accessToken);
+
+        var amount = this.event.request.intent.slots.amount.value;
+        
+        if (!amount || isNaN(amount)) {
+            this.response.speak(this.t('AMOUNT_NOT_RECOGNIZED')).listen(this.t('AMOUNT_REPROMT'));
+            this.emit(':responseReady');
+            return;
+        } else if (amount < 10) {
             this.response.speak(this.t('AMOUNT_GREATER_TEN')).listen(this.t('AMOUNT_REPROMT'));
             this.emit(':responseReady');
             return;
-        } else if(amount%10 != 0) {
+        } else if (amount%10 != 0) {
             this.response.speak(this.t('MULTIPLE_OF_TEN_ALLOWED')).listen(this.t('AMOUNT_REPROMT'));
             this.emit(':responseReady');
             return;
         }
 
-        //checks done -> round every 2.0 to 2!
+        //checks done -> round every 20.0 to 20!
         amount = Math.round(amount);
         
-        invokeBackend.call(this, "https://dncashapi.dn-sol.net/dnapi/token/v1/tokens", {method:'POST', body: JSON.stringify({
-            device_uuid: JSON.parse(alexa.event.session.user.accessToken).DEVICE_UUID,
+        invokeBackend.call(this, accessToken, "https://dncashapi.dn-sol.net/dnapi/token/v1/tokens", {method:'POST', body: JSON.stringify({
+            device_uuid: accessToken.DEVICE_UUID,
             amount: parseInt(amount) * 100,
             symbol: "EUR",
             type: "CASHOUT",
@@ -140,12 +155,12 @@ exports.handler = function (event, context, callback) {
     alexa.execute();
 };
 
-function invokeBackend(alexa, url, options) {
+function invokeBackend(accessToken, url, options) {
 
     options.headers = {
         "Content-Type": "application/json",
-        "DN-API-KEY": JSON.parse(alexa.event.session.user.accessToken).DN_API_KEY,
-        "DN-API-SECRET": JSON.parse(alexa.event.session.user.accessToken).DN_API_SECRET
+        "DN-API-KEY": accessToken.DN_API_KEY,
+        "DN-API-SECRET": accessToken.DN_API_SECRET
     };
     return fetch(url, options)
         .then(res => res.json())
