@@ -83,11 +83,20 @@ const handlers = {
 
         var amount = this.event.request.intent.slots.amount.value;
         
+        amount = parseInt(amount)
+
+        //check if we have some type of number
         if (!amount || isNaN(amount)) {
             this.response.speak(this.t('AMOUNT_NOT_RECOGNIZED')).listen(this.t('AMOUNT_REPROMT'));
             this.emit(':responseReady');
             return;
-        } else if (amount < 10) {
+        }
+        
+        //check done -> we have a number -> round every 20.0 to 20!
+        amount = Math.round(amount);
+        
+        //additional checks
+        if (amount < 10) {
             this.response.speak(this.t('AMOUNT_GREATER_TEN')).listen(this.t('AMOUNT_REPROMT'));
             this.emit(':responseReady');
             return;
@@ -96,9 +105,6 @@ const handlers = {
             this.emit(':responseReady');
             return;
         }
-
-        //checks done -> round every 20.0 to 20!
-        amount = Math.round(amount);
         
         invokeBackend.call(this, accessToken, "https://dncashapi.dn-sol.net/dnapi/token/v1/tokens", {method:'POST', body: JSON.stringify({
             device_uuid: accessToken.DEVICE_UUID,
