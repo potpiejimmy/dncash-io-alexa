@@ -111,7 +111,7 @@ const handlers = {
             amount: parseInt(amount) * 100,
             symbol: "EUR",
             type: "CASHOUT",
-            refname: "alexa-"+this.event.request.requestId
+            refname: ("alexa-"+this.event.request.requestId).substr(-36)
         })}).then(rres => {
             console.log("dncash.io RESULT: " + JSON.stringify(rres));
             this.attributes.speechOutput = this.t('GET_MONEY_RESPONSE', amount);
