@@ -24,9 +24,9 @@ const languageStrings = {
             STOP_MESSAGE: 'Goodbye!',
             GET_MONEY_RESPONSE: 'Okay, just go the next ATM, present your smartphone and you will get %s euros.',
             AUTHENTICATE_MESSAGE: 'To start using this skill, please use the companion app to authenticate to %s',
-            MULTIPLE_OF_TEN_ALLOWED: 'Only numbers multiple of 10 are allowed. Please choose a different amount.',
+            MULTIPLE_OF_TEN_ALLOWED: 'Only numbers multiple of 5 are allowed. Please choose a different amount.',
             AMOUNT_REPROMT: 'Which amount you want to withdraw?',
-            AMOUNT_GREATER_TEN: 'You cannot withdraw less than 10 Euro. Please choose a different amount.',
+            AMOUNT_GREATER_TEN: 'You cannot withdraw less than 5 Euro. Please choose a different amount.',
             AMOUNT_NOT_RECOGNIZED: 'Sorry but I could not recognize the amount. Could you please repeat?'
         },
     },
@@ -40,9 +40,9 @@ const languageStrings = {
             STOP_MESSAGE: 'Auf Wiedersehen!',
             GET_MONEY_RESPONSE: 'Okay, halte einfach dein Handy an den nächsten Geldautomaten und du bekommst %s Euro.',
             AUTHENTICATE_MESSAGE: 'Um diesen Skill nutzen zu können, musst du dich in der Alexa App mit %s verknüpfen.',
-            MULTIPLE_OF_TEN_ALLOWED: 'Es sind nur vielfache von 10 erlaubt. Bitte wählte einen anderen Betrag',
+            MULTIPLE_OF_TEN_ALLOWED: 'Es sind nur vielfache von 5 erlaubt. Bitte wählte einen anderen Betrag',
             AMOUNT_REPROMT: 'Welchen Betrag möchtest du auszahlen?',
-            AMOUNT_GREATER_TEN: 'Du kannst nicht weniger als 10 Euro auszahlen. Bitte wähle einen anderen Betrag.',
+            AMOUNT_GREATER_TEN: 'Du kannst nicht weniger als 5 Euro auszahlen. Bitte wähle einen anderen Betrag.',
             AMOUNT_NOT_RECOGNIZED: 'Tut mir leid, ich habe den Betrag nicht verstanden. Kannst du ihn bitte wiederholen?'
         },
     },
@@ -96,11 +96,11 @@ const handlers = {
         amount = Math.round(amount);
         
         //additional checks
-        if (amount < 10) {
+        if (amount < 5) {
             this.response.speak(this.t('AMOUNT_GREATER_TEN')).listen(this.t('AMOUNT_REPROMT'));
             this.emit(':responseReady');
             return;
-        } else if (amount%10 != 0) {
+        } else if (amount%5 != 0) {
             this.response.speak(this.t('MULTIPLE_OF_TEN_ALLOWED')).listen(this.t('AMOUNT_REPROMT'));
             this.emit(':responseReady');
             return;
