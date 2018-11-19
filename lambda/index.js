@@ -106,7 +106,7 @@ const handlers = {
             return;
         }
         
-        invokeBackend.call(this, accessToken, "https://dncashapi.dn-sol.net/dnapi/token/v1/tokens", {method:'POST', body: JSON.stringify({
+        invokeBackend.call(this, accessToken, process.env.TOKEN_API_URL, {method:'POST', body: JSON.stringify({
             device_uuid: accessToken.DEVICE_UUID,
             amount: parseInt(amount) * 100,
             symbol: "EUR",
